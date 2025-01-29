@@ -6,7 +6,7 @@ from django.urls import reverse
 
 
 import users
-from users.forms import UserLoginForm
+from users.forms import UserLoginForm, UserRegistrationForm
 
 def login(request):
     
@@ -29,34 +29,26 @@ def login(request):
     return render(request, 'users/login.html', context)
 
 def logout(request):
-    if request.method == 'POST':
-        logout(request)
-        return redirect('index')
-    return render(request, 'users/login.html')
+    auth.logout(request)
+    return redirect(reverse('main:index'))
 
 
 def reg(request):
+
     if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        password2 = request.POST.get('password2')
+        form = UserRegistrationForm(data=request.POST)
+        if form.is_valid():
+           form.save()
+           user = form.instance
+           auth.login(request, user)
+        return HttpResponseRedirect(reverse('main:index'))
+    else:
+        form = UserRegistrationForm()
 
-
-        if not all([username, password, password2]):
-            return render(request, 'users/reg.html', {'error': 'Please fill in all fields'})
-
-        if password != password2:
-            return render(request, 'users/reg.html', {'error': 'Passwords do not match'})
-
-
-        try:
-            user = users.objects.create_user(username=username, password=password)
-            user.save()  
-            return redirect('login') 
-        except Exception as e:
-            return render(request, 'users/reg.html', {'error': f'Registration failed: {e}'})
-
-    return render(request, 'users/reg.html')
+    context =  {
+        'title': 'Регистрация'
+    }
+    return render(request, 'users/reg.html', context)
 
 
 def profile(request) :
